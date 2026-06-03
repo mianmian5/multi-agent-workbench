@@ -1,0 +1,26 @@
+services:
+  workbench:
+    build: .
+    container_name: awb-workbench
+    ports:
+      - "8000:8000"
+    volumes:
+      # 知识库持久化（上传的文档不会随容器消失）
+      - awb_knowledge:/root/.awb_knowledge
+      # 自定义 Agent 配置持久化
+      - awb_agents:/root/.awb_agents
+      # .env 配置（将宿主机的 .env 挂载到容器）
+      - ./:/app:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  awb_knowledge:
+  awb_agents:

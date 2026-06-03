@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤖 Multi-Agent Workbench</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- 侧边栏遮罩（移动端） -->
+    <div class="sidebar-mask" id="sidebarMask" onclick="closeSidebarOutside(event)"></div>
+
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>📋 历史记录</h2>
+                <button class="sidebar-toggle" onclick="toggleSidebar()">✕</button>
+            </div>
+            <div class="sidebar-content" id="historyList">
+                <div class="history-empty">暂无记录</div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="icon-btn" onclick="toggleSidebar()" title="历史记录">☰</button>
+                    <h1>🤖 多智能体协作工作台</h1>
+                </div>
+                <div class="topbar-right">
+                    <button class="icon-btn" onclick="toggleMemory()" title="记忆系统">🧠</button>
+                    <button class="icon-btn" onclick="toggleAgents()" title="自定义 Agent">🧩</button>
+                    <button class="icon-btn" onclick="toggleKnowledge()" title="知识库">📚</button>
+                    <button class="icon-btn" onclick="toggleSettings()" title="设置">⚙️</button>
+                    <button class="icon-btn" id="themeToggle" onclick="toggleTheme()" title="切换主题">☀️</button>
+                    <a href="https://github.com/mianmian5/multi-agent-workbench" target="_blank" class="icon-btn" title="GitHub">🐙</a>
+                </div>
+            </header>
+
+            <!-- 任务模板 -->
+            <section class="template-section" id="templateSection">
+                <div class="template-header">
+                    <h2>🧩 快速开始</h2>
+                    <span class="template-hint">选择一个任务模板，AI 团队即刻开始协作</span>
+                </div>
+                <div class="template-grid" id="templateGrid">
+                    <!-- 由 JS 动态加载 -->
+                </div>
+            </section>
+
+            <section class="input-section">
+                <div class="textarea-wrapper">
+                    <textarea id="taskInput" placeholder="输入你想让 AI 团队帮你完成的任务…&#10;试试：帮我构思一个悬疑小说，主角是一个失忆的心理医生" rows="3"></textarea>
+                    <div id="fileAttachments" class="file-attachments"></div>
+                    <div class="textarea-toolbar">
+                        <label class="file-upload-btn">
+                            <span>📎</span>
+                            <span class="file-btn-text">上传文件</span>
+                            <input type="file" id="taskFileInput" accept=".txt,.md,.csv,.pdf" style="display:none" multiple>
+                        </label>
+                        <span class="file-hint">支持 txt / md / csv / pdf</span>
+                    </div>
+                </div>
+                <div class="input-actions">
+                    <button id="runBtn" onclick="runTask()">
+                        <span class="btn-icon">🚀</span>
+                        <span class="btn-text">开始协作</span>
+                    </button>
+                    <label class="discuss-toggle">
+                        <input type="checkbox" id="discussCheck" checked>
+                        <span>💬 讨论模式</span>
+                    </label>
+                </div>
+            </section>
+
+            <section id="workArea" class="work-area" style="display:none;">
+                <div class="workflow-header">
+                    <h2>📋 协作流程</h2>
+                    <div class="task-info">
+                        <span class="status-badge" id="statusBadge">⏸ 等待中</span>
+                        <span class="timer" id="timer">⏱ 0s</span>
+                        <button id="cancelBtn" class="cancel-btn" style="display:none" onclick="cancelTask()">✕ 取消</button>
+                    </div>
+                </div>
+
+                <div id="stepsContainer" class="steps-container"></div>
+
+                <div id="discussSection" class="discuss-section" style="display:none;">
+                    <h3>💬 团队讨论</h3>
+                    <div id="discussContainer" class="discuss-container"></div>
+                </div>
+
+                <div class="log-section">
+                    <h3>📝 执行日志</h3>
+                    <div id="logContainer" class="log-container"></div>
+                </div>
+
+                <div id="resultSection" class="result-section" style="display:none;">
+                    <div class="result-header">
+                        <h3>📝 最终输出</h3>
+                        <div class="result-actions">
+                            <button class="icon-btn" onclick="copyResult()" title="复制结果">📋</button>
+                            <div class="download-menu">
+                                <button class="icon-btn" onclick="toggleDownloadMenu()" title="下载">⬇️</button>
+                                <div id="downloadDropdown" class="download-dropdown">
+                                    <div onclick="downloadAsMarkdown()">📝 下载 Markdown</div>
+                                    <div onclick="downloadAsHTML()">🌐 下载 HTML</div>
+                                    <div onclick="downloadAsPDF()">📕 下载 PDF</div>
+                                    <div onclick="downloadAsDocx()">📄 下载 DOCX</div>
+                                    <div onclick="downloadAsText()">📄 下载纯文本</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="resultContent" class="result-content"></div>
+                </div>
+            </section>
+
+            <footer class="footer">
+                <span>Multi-Agent Workbench v0.5.0</span>
+                <span>·</span>
+                <span id="footerModel">⚙️ 配置 API</span>
+                <span>·</span>
+                <span>让 AI 像团队一样协作 🤖</span>
+            </footer>
+        </main>
+    </div>
+
+    <!-- 设置弹窗 -->
+    <div id="settingsModal" class="modal-overlay" style="display:none;" onclick="closeSettingsOutside(event)">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>⚙️ 设置</h3>
+                <button class="icon-btn" onclick="toggleSettings()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>API Key</label>
+                    <input type="password" id="setApiKey" placeholder="sk-..." />
+                    <span class="form-hint">当前: <span id="currentKeyHint">未设置</span></span>
+                    <div class="form-hint privacy-note">🔒 你的 Key 仅用于本次请求，直接传到模型端，我们不会存储或看到你的 Key</div>
+                </div>
+                <div class="form-group">
+                    <label>API 地址</label>
+                    <input type="url" id="setBaseUrl" placeholder="https://api.deepseek.com/v1" />
+                </div>
+                <div class="form-group">
+                    <label>模型</label>
+                    <select id="setModel">
+                        <optgroup label="DeepSeek">
+                            <option value="deepseek-chat">DeepSeek V3</option>
+                            <option value="deepseek-reasoner">DeepSeek R1</option>
+                        </optgroup>
+                        <optgroup label="OpenAI">
+                            <option value="gpt-4o">GPT-4o</option>
+                            <option value="gpt-4o-mini">GPT-4o Mini</option>
+                            <option value="o3-mini">o3 Mini</option>
+                            <option value="gpt-4.1">GPT-4.1</option>
+                        </optgroup>
+                        <optgroup label="Anthropic">
+                            <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                            <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</option>
+                            <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                        </optgroup>
+                        <optgroup label="阿里云 通义千问">
+                            <option value="qwen-plus">通义千问 Plus</option>
+                            <option value="qwen-max">通义千问 Max</option>
+                            <option value="qwen-turbo">通义千问 Turbo</option>
+                            <option value="qwen2.5-72b-instruct">Qwen2.5 72B</option>
+                        </optgroup>
+                        <optgroup label="Google">
+                            <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                            <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                        </optgroup>
+                        <optgroup label="其他">
+                            <option value="moonshot-v1-8k">Moonshot (Kimi)</option>
+                            <option value="glm-4-plus">智谱 GLM-4 Plus</option>
+                            <option value="minimax-text-01">MiniMax</option>
+                        </optgroup>
+                        <optgroup label="本地 / 自定义">
+                            <option value="__custom__">✏️ 自定义模型名...</option>
+                        </optgroup>
+                    </select>
+                    <input type="text" id="setModelCustom" style="display:none;margin-top:0.5rem;" placeholder="输入自定义模型名称" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="saveSettings()" class="btn-primary">💾 保存</button>
+                <span id="settingsStatus" class="settings-status"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 记忆系统弹窗 -->
+    <div id="memoryModal" class="modal-overlay" style="display:none;" onclick="closeMemoryOutside(event)">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h3>🧠 记忆系统</h3>
+                <button class="icon-btn" onclick="toggleMemory()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="mem-tip">Agent 会自动记住对话中的关键信息，并在后续任务中引用。你也可以手动添加记忆。</div>
+                <div class="mem-form">
+                    <div class="form-group">
+                        <label>添加记忆</label>
+                        <textarea id="memInput" rows="2" placeholder="如：用户偏好使用 DeepSeek 模型..."></textarea>
+                    </div>
+                    <div class="mem-form-row">
+                        <select id="memType">
+                            <option value="note">💡 笔记</option>
+                            <option value="fact">📌 事实</option>
+                            <option value="preference">❤️ 偏好</option>
+                        </select>
+                        <input type="text" id="memTags" placeholder="标签，逗号分隔" />
+                        <button onclick="addMemory()" class="btn-primary" style="padding:0.4rem 1rem;font-size:0.85rem;">💾 保存</button>
+                    </div>
+                    <span id="memFormStatus" class="form-status"></span>
+                </div>
+                <div class="mem-filter">
+                    <input type="text" id="memSearch" placeholder="🔍 搜索记忆..." oninput="searchMemory(this.value)" />
+                    <span id="memStats" class="mem-stats"></span>
+                </div>
+                <div id="memList" class="mem-list">
+                    <div class="mem-empty">暂无记忆。完成任务后 Agent 会自动创建记忆 🧠</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 自定义 Agent 弹窗 -->
+    <div id="agentsModal" class="modal-overlay" style="display:none;" onclick="closeAgentsOutside(event)">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h3>🧩 自定义 Agent</h3>
+                <button class="icon-btn" onclick="toggleAgents()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="agents-tip">创建你自己的专属 Agent，无需写代码。Planner 会自动识别并分配任务。</div>
+                <div class="agents-form" id="agentForm">
+                    <input type="hidden" id="agentEditId" value="" />
+                    <div class="form-group">
+                        <label>Agent 名称 <span class="required">*</span></label>
+                        <input type="text" id="agentName" placeholder="如：数据分析专员" />
+                    </div>
+                    <div class="form-group">
+                        <label>能力描述</label>
+                        <input type="text" id="agentDesc" placeholder="如：负责数据分析、生成报表" />
+                    </div>
+                    <div class="form-group">
+                        <label>能力关键词（逗号分隔）</label>
+                        <input type="text" id="agentCaps" placeholder="如：数据分析, 报表, 可视化, 统计" />
+                        <span class="form-hint">Planner 根据这些关键词匹配任务</span>
+                    </div>
+                    <div class="form-group">
+                        <label>系统提示词 <span class="required">*</span></label>
+                        <textarea id="agentPrompt" rows="5" placeholder="你是一个xx专家，负责..."></textarea>
+                    </div>
+                    <div class="agents-form-actions">
+                        <button onclick="saveAgent()" class="btn-primary">💾 保存</button>
+                        <button onclick="resetAgentForm()" class="btn-secondary">🔄 重置</button>
+                        <span id="agentFormStatus" class="form-status"></span>
+                    </div>
+                </div>
+                <div class="agents-divider"></div>
+                <div class="agents-list-header">
+                    <span>已创建的 Agent</span>
+                </div>
+                <div id="agentsList" class="agents-list">
+                    <div class="agents-empty">暂无自定义 Agent。创建一个试试！</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 知识库弹窗 -->
+    <div id="knowledgeModal" class="modal-overlay" style="display:none;" onclick="closeKnowledgeOutside(event)">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h3>📚 知识库</h3>
+                <button class="icon-btn" onclick="toggleKnowledge()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="kb-upload-area" id="kbUploadArea">
+                    <div class="kb-upload-hint">📂 拖拽文件到此处，或点击选择</div>
+                    <input type="file" id="kbFileInput" accept=".txt,.md,.csv,.pdf" style="display:none" multiple />
+                </div>
+                <div id="kbUploadStatus" class="kb-upload-status"></div>
+                <div class="kb-list-header">
+                    <span>已上传文件</span>
+                    <span id="kbStats" class="kb-stats"></span>
+                </div>
+                <div id="kbFileList" class="kb-file-list">
+                    <div class="kb-empty">暂无文件，上传文档让 Agent 在协作时使用 🚀</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="/static/app.js"></script>
+</body>
+</html>

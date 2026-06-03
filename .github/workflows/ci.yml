@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    - name: Check Python syntax
+      run: |
+        python -m py_compile multi_agent_workbench/agent/base.py
+        python -m py_compile multi_agent_workbench/agent/search_agent.py
+        python -m py_compile multi_agent_workbench/agent/writer_agent.py
+        python -m py_compile multi_agent_workbench/agent/coding_agent.py
+        python -m py_compile multi_agent_workbench/agent/discuss_agent.py
+        python -m py_compile multi_agent_workbench/agent/summarizer_agent.py
+        python -m py_compile multi_agent_workbench/agent/translate_agent.py
+        python -m py_compile multi_agent_workbench/agent/custom_agent.py
+        python -m py_compile multi_agent_workbench/orchestrator/planner.py
+        python -m py_compile multi_agent_workbench/orchestrator/router.py
+        python -m py_compile multi_agent_workbench/orchestrator/workbench.py
+        python -m py_compile multi_agent_workbench/communication/message_bus.py
+        python -m py_compile multi_agent_workbench/tools/web_search.py
+        python -m py_compile multi_agent_workbench/tools/code_sandbox.py
+        python -m py_compile multi_agent_workbench/tools/knowledge_base.py
+        python -m py_compile multi_agent_workbench/tools/mcp_tools.py
+        python -m py_compile multi_agent_workbench/tools/docx_gen.py
+        python -m py_compile multi_agent_workbench/tools/memory_system.py
+        python -m py_compile multi_agent_workbench/tools/custom_agent_registry.py
+        echo "✅ All Python files compiled successfully"
+
+  import:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install httpx
+    - name: Test imports
+      run: |
+        python -c "
+        import sys
+        sys.path.insert(0, '.')
+        from multi_agent_workbench.agent.base import AgentContext
+        from multi_agent_workbench.orchestrator.workbench import WorkBench
+        ctx = AgentContext()
+        bench = WorkBench(context=ctx)
+        print(f'✅ {len(bench.agents)} agents created')
+        for a in bench.agents:
+            print(f'   - {a.name}')
+        "
