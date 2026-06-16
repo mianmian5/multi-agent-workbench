@@ -1,5 +1,11 @@
 # 🤖 Multi-Agent Workbench
 
+> ## 🚀 在线体验
+> 
+> **👉 [https://zybit.top/mawb/](https://zybit.top/mawb/)**
+> 
+> 无需安装，浏览器打开即用！已部署 7×24 小时在线服务。
+
 **让多个 AI 像团队一样协作完成任务。**
 
 <p align="center">
