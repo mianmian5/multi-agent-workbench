@@ -2,7 +2,7 @@
 
 > ## 🚀 在线体验
 > 
-> **👉 [https://zybit.top/mawb/](https://zybit.top/mawb/)**
+> **👉 [http://zybit.top/mawb/](http://zybit.top/mawb/)**
 > 
 > 无需安装，浏览器打开即用！已部署 7×24 小时在线服务。
 
