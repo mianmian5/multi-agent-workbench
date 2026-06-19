@@ -105,7 +105,6 @@ class Planner:
             score = sum(1 for kw in agent.get("capabilities", []) if kw.lower() in task_lower)
             if score > 0:
                 matched.append((score, agent))
-        matched.sort(reverse=True)
 
         # 检查是否是编程类任务
         is_code = any(kw in task_lower for kw in ["编程", "代码", "python", "写一个", "脚本", "爬虫", "程序", "算法"])
